@@ -1,6 +1,6 @@
 # NetSimX — Intelligent Network Routing & Traffic Simulator
 
-A Java 21 + JavaFX simulator that models real computer networks: routers,
+A Java 17 + JavaFX simulator that models real computer networks: routers,
 links, packet-by-packet forwarding, congestion, QoS scheduling, TCP/UDP
 behavior, link/router failures, live performance analytics, and an
 adaptive AI route optimizer — all visualized in an interactive dashboard.
@@ -21,7 +21,7 @@ mvn package          # build a distributable fat jar at target/netsimx.jar
 java -jar target/netsimx.jar
 ```
 
-Requires **JDK 21+** and an internet connection on first build (Maven
+Requires **JDK 17+** and an internet connection on first build (Maven
 needs to download JavaFX and JUnit from Maven Central — everything else in
 this project is dependency-free, see [Design notes](#design-notes)).
 
