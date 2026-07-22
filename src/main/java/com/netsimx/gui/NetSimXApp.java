@@ -17,6 +17,7 @@ import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ScrollPane;
@@ -99,10 +100,49 @@ public class NetSimXApp extends Application {
         startClocks();
         logConsole.append("NetSimX ready. " + topology.routerCount() + " routers, " + topology.linkCount() + " links loaded.");
 
+        if (Boolean.getBoolean("netsimx.demo")) {
+            runDemoSequence();
+        }
+
         stage.setOnCloseRequest(e -> {
             if (simTimeline != null) simTimeline.stop();
             if (animationTimer != null) animationTimer.stop();
         });
+    }
+
+    /**
+     * Opt-in scripted sequence (enable with {@code -Dnetsimx.demo=true}) used
+     * only to record deterministic screenshots/GIFs for the README - starts
+     * the simulation immediately, adds a couple of extra flows for a livelier
+     * visual, and fails a central link a few seconds in so a recording
+     * captures a real reroute event without needing manual clicking.
+     */
+    private void runDemoSequence() {
+        controls.runPauseButton.setSelected(true);
+
+        if (topology.getRouter("R1") != null && topology.getRouter("R9") != null) {
+            engine.getTrafficGenerator().addFlow(
+                    new TrafficGenerator.Flow("R1", "R9", TrafficGenerator.TrafficType.VIDEO, 0.3));
+            controls.flowsList.getItems().add("R1 -> R9 [VIDEO]");
+        }
+        if (topology.getRouter("R7") != null && topology.getRouter("R3") != null) {
+            engine.getTrafficGenerator().addFlow(
+                    new TrafficGenerator.Flow("R7", "R3", TrafficGenerator.TrafficType.FILE_TRANSFER, 0.25));
+            controls.flowsList.getItems().add("R7 -> R3 [FILE_TRANSFER]");
+        }
+
+        Thread failureTimer = new Thread(() -> {
+            try { Thread.sleep(4000); } catch (InterruptedException ignored) { return; }
+            Platform.runLater(() -> {
+                Link l = topology.getLink("L6"); // Dist-1 <-> Dist-2 in sample-network.json
+                if (l != null) {
+                    engine.setLinkUp(l, false);
+                    logConsole.append("[demo] Failing L6 (Dist-1<->Dist-2) to show live reroute.");
+                }
+            });
+        });
+        failureTimer.setDaemon(true);
+        failureTimer.start();
     }
 
     // ------------------------------------------------------------------ //
