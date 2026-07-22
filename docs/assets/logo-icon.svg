@@ -1,0 +1,49 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#1b2436"/>
+      <stop offset="100%" stop-color="#0a0e17"/>
+    </radialGradient>
+    <linearGradient id="nodeBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6fd3ff"/>
+      <stop offset="100%" stop-color="#2f8fd4"/>
+    </linearGradient>
+    <linearGradient id="nodeGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7be3b0"/>
+      <stop offset="100%" stop-color="#2fae7a"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#bg)"/>
+  <rect x="6" y="6" width="500" height="500" rx="92" fill="none" stroke="#2a3650" stroke-width="4"/>
+
+  <!-- network links -->
+  <g stroke="#4fc3f7" stroke-width="6" opacity="0.85">
+    <line x1="256" y1="256" x2="150" y2="150"/>
+    <line x1="256" y1="256" x2="362" y2="150"/>
+    <line x1="256" y1="256" x2="150" y2="362"/>
+    <line x1="256" y1="256" x2="362" y2="362"/>
+    <line x1="150" y1="150" x2="362" y2="150"/>
+    <line x1="150" y1="362" x2="362" y2="362"/>
+  </g>
+
+  <!-- animated-look packet dot -->
+  <circle cx="303" cy="203" r="9" fill="#ffffff" opacity="0.95"/>
+
+  <!-- corner nodes -->
+  <circle cx="150" cy="150" r="34" fill="url(#nodeGreen)" filter="url(#glow)"/>
+  <circle cx="362" cy="150" r="34" fill="url(#nodeBlue)" filter="url(#glow)"/>
+  <circle cx="150" cy="362" r="34" fill="url(#nodeBlue)" filter="url(#glow)"/>
+  <circle cx="362" cy="362" r="34" fill="url(#nodeGreen)" filter="url(#glow)"/>
+
+  <!-- center hub node, larger -->
+  <circle cx="256" cy="256" r="46" fill="url(#nodeGreen)" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="46" fill="none" stroke="#eafff5" stroke-width="3" opacity="0.6"/>
+</svg>

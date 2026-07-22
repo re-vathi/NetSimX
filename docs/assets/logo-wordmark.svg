@@ -1,0 +1,40 @@
+<svg width="900" height="200" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nodeBlue2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6fd3ff"/>
+      <stop offset="100%" stop-color="#2f8fd4"/>
+    </linearGradient>
+    <linearGradient id="nodeGreen2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7be3b0"/>
+      <stop offset="100%" stop-color="#2fae7a"/>
+    </linearGradient>
+    <filter id="glow2" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- icon, scaled down, left aligned -->
+  <g transform="translate(20,20) scale(0.3125)">
+    <g stroke="#4fc3f7" stroke-width="6" opacity="0.85">
+      <line x1="256" y1="256" x2="150" y2="150"/>
+      <line x1="256" y1="256" x2="362" y2="150"/>
+      <line x1="256" y1="256" x2="150" y2="362"/>
+      <line x1="256" y1="256" x2="362" y2="362"/>
+      <line x1="150" y1="150" x2="362" y2="150"/>
+      <line x1="150" y1="362" x2="362" y2="362"/>
+    </g>
+    <circle cx="303" cy="203" r="9" fill="#ffffff" opacity="0.95"/>
+    <circle cx="150" cy="150" r="34" fill="url(#nodeGreen2)" filter="url(#glow2)"/>
+    <circle cx="362" cy="150" r="34" fill="url(#nodeBlue2)" filter="url(#glow2)"/>
+    <circle cx="150" cy="362" r="34" fill="url(#nodeBlue2)" filter="url(#glow2)"/>
+    <circle cx="362" cy="362" r="34" fill="url(#nodeGreen2)" filter="url(#glow2)"/>
+    <circle cx="256" cy="256" r="46" fill="url(#nodeGreen2)" filter="url(#glow2)"/>
+  </g>
+
+  <text x="200" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="72" font-weight="800" fill="#e8f1fa">NetSim<tspan fill="#4fc3f7">X</tspan></text>
+  <text x="202" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#7d93ad" letter-spacing="1">Intelligent Network Routing &amp; Traffic Simulator</text>
+</svg>
