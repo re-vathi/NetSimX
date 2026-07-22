@@ -19,6 +19,13 @@
         <javafx.version>21.0.2</javafx.version>
         <junit.version>5.10.2</junit.version>
         <main.class>com.netsimx.gui.NetSimXApp</main.class>
+        <!-- The shaded/packaged jar must launch through Launcher (not NetSimXApp
+             directly) or `java -jar` fails with "JavaFX runtime components are
+             missing" - the JVM specifically blocks a Main-Class that extends
+             Application when JavaFX isn't on the module path, which it isn't
+             once everything is shaded flat into one jar. `mvn javafx:run` sets
+             up the module path itself, so it uses NetSimXApp directly instead. -->
+        <jar.main.class>com.netsimx.gui.Launcher</jar.main.class>
     </properties>
 
     <dependencies>
@@ -90,7 +97,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>${main.class}</mainClass>
+                                    <mainClass>${jar.main.class}</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
