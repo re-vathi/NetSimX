@@ -1,34 +1,65 @@
-# NetSimX — Intelligent Network Routing & Traffic Simulator
+<div align="center">
 
-A Java 17 + JavaFX simulator that models real computer networks: routers,
+<img src="docs/assets/logo-wordmark.png" alt="NetSimX" width="560"/>
+
+**A Java 17 + JavaFX simulator that models real computer networks** — routers,
 links, packet-by-packet forwarding, congestion, QoS scheduling, TCP/UDP
-behavior, link/router failures, live performance analytics, and an
-adaptive AI route optimizer — all visualized in an interactive dashboard.
+behavior, link/router failures, live performance analytics, and an adaptive
+AI route optimizer, all visualized in an interactive dashboard.
 
-![NetSimX dashboard](docs/screenshot.png)
+<!-- Replace OWNER/REPO below once this is pushed to your own GitHub repo -->
+[![CI](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/ci.yml?branch=main&label=build&logo=github)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+![Java](https://img.shields.io/badge/Java-17%2B-orange?logo=openjdk&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-4fc3f7?logo=java&logoColor=white)
+![Maven](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-11%20passing-43cf94)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-This build was verified end-to-end during development: every package
-compiles cleanly, the full JUnit test suite passes, and the JavaFX
-dashboard was launched and screenshotted headlessly to confirm it actually
-renders (not just compiles) before being handed off.
+<img src="docs/assets/demo.gif" alt="NetSimX live demo — traffic flowing, a link failing, and the network rerouting around it" width="820"/>
+
+*Live capture: traffic flowing across a 9-router topology, a link failing mid-run, and the routing engine rerouting around it — recorded straight from the running app.*
+
+</div>
+
+---
 
 ## Quick start
 
 ```bash
 mvn javafx:run      # launch the dashboard (fetches JavaFX from Maven Central on first run)
-mvn test             # run the JUnit 5 test suite
+mvn test             # run the JUnit 5 test suite (11 tests)
 mvn package          # build a distributable fat jar at target/netsimx.jar
 java -jar target/netsimx.jar
 ```
 
-Requires **JDK 17+** and an internet connection on first build (Maven
-needs to download JavaFX and JUnit from Maven Central — everything else in
-this project is dependency-free, see [Design notes](#design-notes)).
+Requires **JDK 17+** and an internet connection on first build (Maven needs
+to download JavaFX and JUnit from Maven Central — everything else in this
+project is dependency-free, see [Design notes](#design-notes)).
 
 On launch, NetSimX loads `config/sample-network.json` (a 9-router, 3-tier
-campus-style topology) if it's found in the working directory; otherwise
-it falls back to a small built-in 4-router demo topology, so the app never
+campus-style topology) if it's found in the working directory; otherwise it
+falls back to a small built-in 4-router demo topology, so the app never
 fails to start.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshot.png" alt="Fresh topology load, simulation paused"/><br/><sub><b>Fresh load</b> — 9-router topology, paused</sub></td>
+<td width="33%"><img src="docs/assets/screenshot-dashboard.png" alt="Simulation running with live charts"/><br/><sub><b>Running</b> — traffic flowing, charts live</sub></td>
+<td width="33%"><img src="docs/assets/screenshot-failure-reroute.png" alt="Link failure with automatic reroute"/><br/><sub><b>Failure</b> — link down (red dashed), auto-reroute</sub></td>
+</tr>
+</table>
+
+## Architecture
+
+<img src="docs/assets/architecture-diagram.png" alt="NetSimX module architecture diagram" width="900"/>
+
+This mirrors the real package structure — every box is an actual Java
+package, every arrow a real dependency between them, not an idealized
+diagram. See [Project layout](#project-layout) below for the file-level
+breakdown.
 
 ## What's implemented
 
@@ -52,8 +83,8 @@ fails to start.
 
 **AI route optimizer is pure Java, not Python/Stable-Baselines3.** The
 original design doc listed Python + Stable-Baselines3 as an optional
-external RL component. This sandbox couldn't reach PyPI or a Python RL
-stack in a way that would cleanly integrate with a JavaFX desktop app, so
+external RL component. This build couldn't reach PyPI or a Python RL stack
+in a way that would cleanly integrate with a JavaFX desktop app, so
 `ai.QLearningRouteOptimizer` implements a real (if intentionally
 lightweight) tabular Q-learning agent directly in Java — no external
 service, no stub. It learns a state/action table keyed on
@@ -94,7 +125,8 @@ persistence, add `org.xerial:sqlite-jdbc` to `pom.xml` and swap
   connect them; click a router or link then "Remove Selected" to delete
   it. Drag routers to reposition them.
 - **Right-click a router or link** to toggle it up/down — this is the
-  quickest way to test rerouting after a failure (Module 7).
+  quickest way to test rerouting after a failure (Module 7), and it's
+  exactly what the GIF above shows.
 - **Traffic Generator panel** — add a flow by router ID + traffic type, or
   click "Add Random Flow" to wire up two random active routers. Flows keep
   generating packets every tick per their configured rate.
@@ -114,10 +146,12 @@ persistence, add `org.xerial:sqlite-jdbc` to `pom.xml` and swap
 ```
 netsimx/
 ├── pom.xml
+├── .github/workflows/ci.yml     # GitHub Actions: build + test on JDK 17 & 21
 ├── config/
 │   └── sample-network.json      # 9-router demo topology loaded on startup
 ├── docs/
-│   └── screenshot.png
+│   ├── screenshot.png
+│   └── assets/                  # logo, GIF, gallery screenshots, architecture diagram
 └── src/
     ├── main/java/com/netsimx/
     │   ├── model/                # Router, Link, Packet, NetworkTopology, enums
@@ -169,6 +203,25 @@ Each tick (`SimulationEngine.tick()`):
 5. **Metrics** — queue occupancy and a full `PerformanceSnapshot`
    (throughput, delay, PDR, loss rate, utilization) are recorded.
 
+## Recording your own demo assets
+
+The screenshots and GIF above were captured from the actual running app,
+not mocked up. If you change the topology or want fresh assets, there's a
+scripted demo mode built in — it auto-starts the simulation, adds a couple
+of extra traffic flows, and fails a central link 4 seconds in, so you get
+a real reroute event on camera without clicking anything. Enable it with
+the `netsimx.demo` system property:
+
+```bash
+mvn package
+java -Dnetsimx.demo=true -jar target/netsimx.jar
+```
+
+(Package first so the `-D` flag applies to the actual app process — passing
+system properties through `mvn javafx:run` depends on plugin-version
+behavior we didn't want to rely on for something this easy to get right
+via the jar instead.)
+
 ## Known limitations / good next steps
 
 - The AI optimizer's tabular Q-table doesn't scale to very large
@@ -179,3 +232,7 @@ Each tick (`SimulationEngine.tick()`):
   queueing), matching the priority list in the design doc.
 - BGP, MPLS, IPv6, SDN/NFV, and the other "Future Scope" items from the
   design doc are intentionally out of scope for this build.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
