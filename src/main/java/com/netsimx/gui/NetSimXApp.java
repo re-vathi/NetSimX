@@ -26,6 +26,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -77,14 +78,19 @@ public class NetSimXApp extends Application {
         wireControlHandlers();
         wireCanvasHandlers();
 
+        var visualBounds = Screen.getPrimary().getVisualBounds();
+        double windowWidth = Math.min(1400, visualBounds.getWidth() * 0.95);
+        double windowHeight = Math.min(820, visualBounds.getHeight() * 0.9);
+
         BorderPane root = buildLayout();
 
-        Scene scene = new Scene(root, 1400, 820);
+        Scene scene = new Scene(root, windowWidth, windowHeight);
         var cssUrl = getClass().getResource("/com/netsimx/gui/dashboard.css");
         if (cssUrl != null) scene.getStylesheets().add(cssUrl.toExternalForm());
 
         stage.setTitle("NetSimX \u2014 Intelligent Network Routing & Traffic Simulator");
         stage.setScene(scene);
+        stage.centerOnScreen();
         stage.show();
 
         engine.recomputeRoutes();
