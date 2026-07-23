@@ -20,6 +20,7 @@ public class FailureSimulator {
     private final Random random = new Random();
     /** If >0, randomly fail a link/router with this probability per tick (chaos-testing mode). */
     private double randomFailureProbabilityPerTick = 0.0;
+    private long totalFailureEvents = 0;
 
     public void setRandomFailureProbabilityPerTick(double p) {
         this.randomFailureProbabilityPerTick = Math.max(0, Math.min(1, p));
@@ -29,9 +30,15 @@ public class FailureSimulator {
         return randomFailureProbabilityPerTick;
     }
 
+    /** Total number of times a link or router has been taken down (manually or via chaos mode) - for report generation. */
+    public long getTotalFailureEvents() {
+        return totalFailureEvents;
+    }
+
     public void failLink(Link link, BiConsumer<Link, Boolean> onChange) {
         if (link.isUp()) {
             link.setUp(false);
+            totalFailureEvents++;
             if (onChange != null) onChange.accept(link, false);
         }
     }
@@ -46,6 +53,7 @@ public class FailureSimulator {
     public void failRouter(Router router, BiConsumer<Router, Boolean> onChange) {
         if (router.isUp()) {
             router.setStatus(Router.Status.DOWN);
+            totalFailureEvents++;
             if (onChange != null) onChange.accept(router, false);
         }
     }

@@ -17,12 +17,31 @@ public class QueueManager {
 
     private final Map<String, Integer> highWaterMarks = new LinkedHashMap<>();
 
+    /** Threshold above which a router counts as "congested" for event tracking. */
+    private static final double CONGESTION_THRESHOLD = 0.75;
+    private boolean wasCongested = false;
+    private long congestionEventCount = 0;
+
     /** Call once per simulation tick after packets have been enqueued/dequeued. */
     public void sample(NetworkTopology topology) {
         for (Router r : topology.getRouters()) {
             int size = r.getQueueSize();
             highWaterMarks.merge(r.getId(), size, Math::max);
         }
+
+        // Episode-based congestion tracking: count each *onset* (not-congested -> congested
+        // transition) as one event, rather than counting every tick spent congested - a
+        // 50-tick traffic jam should read as "1 event", not "50 events".
+        boolean isCongested = congestedRouterFraction(topology, CONGESTION_THRESHOLD) > 0;
+        if (isCongested && !wasCongested) {
+            congestionEventCount++;
+        }
+        wasCongested = isCongested;
+    }
+
+    /** Total number of distinct congestion episodes observed so far - for report generation. */
+    public long getCongestionEventCount() {
+        return congestionEventCount;
     }
 
     public int getHighWaterMark(String routerId) {
@@ -51,5 +70,7 @@ public class QueueManager {
 
     public void reset() {
         highWaterMarks.clear();
+        wasCongested = false;
+        congestionEventCount = 0;
     }
 }
