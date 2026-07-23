@@ -1,0 +1,142 @@
+{
+  "routers": [
+    {
+      "id": "R1",
+      "label": "Hub",
+      "x": 450,
+      "y": 300,
+      "queueCapacity": 64,
+      "status": "UP"
+    },
+    {
+      "id": "R2",
+      "label": "Spoke-1",
+      "x": 670,
+      "y": 300,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R3",
+      "label": "Spoke-2",
+      "x": 605.5634918610405,
+      "y": 455.56349186104046,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R4",
+      "label": "Spoke-3",
+      "x": 450,
+      "y": 520,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R5",
+      "label": "Spoke-4",
+      "x": 294.43650813895954,
+      "y": 455.56349186104046,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R6",
+      "label": "Spoke-5",
+      "x": 230,
+      "y": 300,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R7",
+      "label": "Spoke-6",
+      "x": 294.43650813895954,
+      "y": 144.43650813895957,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R8",
+      "label": "Spoke-7",
+      "x": 449.99999999999994,
+      "y": 80,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R9",
+      "label": "Spoke-8",
+      "x": 605.5634918610403,
+      "y": 144.4365081389595,
+      "queueCapacity": 48,
+      "status": "UP"
+    }
+  ],
+  "links": [
+    {
+      "id": "L1",
+      "a": "R1",
+      "b": "R2",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L2",
+      "a": "R1",
+      "b": "R3",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L3",
+      "a": "R1",
+      "b": "R4",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L4",
+      "a": "R1",
+      "b": "R5",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L5",
+      "a": "R1",
+      "b": "R6",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L6",
+      "a": "R1",
+      "b": "R7",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L7",
+      "a": "R1",
+      "b": "R8",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    },
+    {
+      "id": "L8",
+      "a": "R1",
+      "b": "R9",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 100
+    }
+  ]
+}

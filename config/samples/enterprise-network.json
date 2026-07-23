@@ -1,0 +1,174 @@
+{
+  "routers": [
+    {
+      "id": "R1",
+      "label": "R1",
+      "x": 670,
+      "y": 300,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R2",
+      "label": "R2",
+      "x": 560,
+      "y": 490.5255888325765,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R3",
+      "label": "R3",
+      "x": 340.00000000000006,
+      "y": 490.52558883257655,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R4",
+      "label": "R4",
+      "x": 230,
+      "y": 300,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R5",
+      "label": "R5",
+      "x": 339.9999999999999,
+      "y": 109.47441116742357,
+      "queueCapacity": 48,
+      "status": "UP"
+    },
+    {
+      "id": "R6",
+      "label": "R6",
+      "x": 560,
+      "y": 109.47441116742351,
+      "queueCapacity": 48,
+      "status": "UP"
+    }
+  ],
+  "links": [
+    {
+      "id": "L1",
+      "a": "R1",
+      "b": "R2",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L2",
+      "a": "R1",
+      "b": "R3",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L3",
+      "a": "R1",
+      "b": "R4",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L4",
+      "a": "R1",
+      "b": "R5",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L5",
+      "a": "R1",
+      "b": "R6",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L6",
+      "a": "R2",
+      "b": "R3",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L7",
+      "a": "R2",
+      "b": "R4",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L8",
+      "a": "R2",
+      "b": "R5",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L9",
+      "a": "R2",
+      "b": "R6",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L10",
+      "a": "R3",
+      "b": "R4",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L11",
+      "a": "R3",
+      "b": "R5",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L12",
+      "a": "R3",
+      "b": "R6",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L13",
+      "a": "R4",
+      "b": "R5",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L14",
+      "a": "R4",
+      "b": "R6",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L15",
+      "a": "R5",
+      "b": "R6",
+      "cost": 1,
+      "latencyMs": 5,
+      "bandwidthPps": 80
+    }
+  ]
+}

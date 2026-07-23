@@ -1,0 +1,206 @@
+{
+  "routers": [
+    {
+      "id": "R1",
+      "label": "Root",
+      "x": 450,
+      "y": 100,
+      "queueCapacity": 64,
+      "status": "UP"
+    },
+    {
+      "id": "R2",
+      "label": "Branch-1",
+      "x": 210,
+      "y": 300,
+      "queueCapacity": 56,
+      "status": "UP"
+    },
+    {
+      "id": "R3",
+      "label": "Leaf-1.1",
+      "x": 183.33333333333334,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R4",
+      "label": "Leaf-1.2",
+      "x": 236.66666666666669,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R5",
+      "label": "Branch-2",
+      "x": 370,
+      "y": 300,
+      "queueCapacity": 56,
+      "status": "UP"
+    },
+    {
+      "id": "R6",
+      "label": "Leaf-2.1",
+      "x": 343.3333333333333,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R7",
+      "label": "Leaf-2.2",
+      "x": 396.6666666666667,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R8",
+      "label": "Branch-3",
+      "x": 530,
+      "y": 300,
+      "queueCapacity": 56,
+      "status": "UP"
+    },
+    {
+      "id": "R9",
+      "label": "Leaf-3.1",
+      "x": 503.3333333333333,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R10",
+      "label": "Leaf-3.2",
+      "x": 556.6666666666666,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R11",
+      "label": "Branch-4",
+      "x": 690,
+      "y": 300,
+      "queueCapacity": 56,
+      "status": "UP"
+    },
+    {
+      "id": "R12",
+      "label": "Leaf-4.1",
+      "x": 663.3333333333334,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    },
+    {
+      "id": "R13",
+      "label": "Leaf-4.2",
+      "x": 716.6666666666666,
+      "y": 500,
+      "queueCapacity": 32,
+      "status": "UP"
+    }
+  ],
+  "links": [
+    {
+      "id": "L1",
+      "a": "R1",
+      "b": "R2",
+      "cost": 1,
+      "latencyMs": 4,
+      "bandwidthPps": 120
+    },
+    {
+      "id": "L2",
+      "a": "R2",
+      "b": "R3",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L3",
+      "a": "R2",
+      "b": "R4",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L4",
+      "a": "R1",
+      "b": "R5",
+      "cost": 1,
+      "latencyMs": 4,
+      "bandwidthPps": 120
+    },
+    {
+      "id": "L5",
+      "a": "R5",
+      "b": "R6",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L6",
+      "a": "R5",
+      "b": "R7",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L7",
+      "a": "R1",
+      "b": "R8",
+      "cost": 1,
+      "latencyMs": 4,
+      "bandwidthPps": 120
+    },
+    {
+      "id": "L8",
+      "a": "R8",
+      "b": "R9",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L9",
+      "a": "R8",
+      "b": "R10",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L10",
+      "a": "R1",
+      "b": "R11",
+      "cost": 1,
+      "latencyMs": 4,
+      "bandwidthPps": 120
+    },
+    {
+      "id": "L11",
+      "a": "R11",
+      "b": "R12",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    },
+    {
+      "id": "L12",
+      "a": "R11",
+      "b": "R13",
+      "cost": 2,
+      "latencyMs": 6,
+      "bandwidthPps": 80
+    }
+  ]
+}
