@@ -366,6 +366,14 @@ will find that a few minutes of clicking around the dashboard won't.
 - BGP, MPLS, IPv6, SDN/NFV, and the other "Future Scope" items from the
   design doc are intentionally out of scope for this build.
 
+## Full project documentation
+
+This README covers how to run and use NetSimX. For the complete story —
+why the project exists, a beginner-friendly walkthrough of every file
+and package, the full development history including the bugs found and
+fixed along the way, and a guide to extending the project — see
+**[docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)**.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

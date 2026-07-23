@@ -171,12 +171,14 @@ public class NetSimXApp extends Application {
         alert.setTitle("NetSimX Documentation");
         alert.setHeaderText("NetSimX \u2014 Intelligent Network Routing & Traffic Simulator");
         alert.setContentText(
-                "Full documentation lives in this project's README.md, including:\n\n" +
+                "Quick reference lives in this project's README.md.\n\n" +
+                "For the complete story - why the project exists, a beginner-friendly\n" +
+                "walkthrough of every file, the full development history, and a guide\n" +
+                "to extending it - see docs/PROJECT_DOCUMENTATION.md.\n\n" +
                 "\u2022 Module-by-module architecture overview\n" +
                 "\u2022 How the simulation loop works (traffic, QoS, congestion, TCP/UDP, failures)\n" +
-                "\u2022 Dashboard controls and inspector panels\n" +
-                "\u2022 JSON topology format for Load/Save\n\n" +
-                "Open README.md in the project root to read it.");
+                "\u2022 Every bug found and fixed, and why\n" +
+                "\u2022 How to extend NetSimX with new algorithms, traffic types, or topologies");
         alert.showAndWait();
     }
 
