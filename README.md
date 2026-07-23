@@ -368,11 +368,16 @@ will find that a few minutes of clicking around the dashboard won't.
 
 ## Full project documentation
 
-This README covers how to run and use NetSimX. For the complete story —
-why the project exists, a beginner-friendly walkthrough of every file
-and package, the full development history including the bugs found and
-fixed along the way, and a guide to extending the project — see
+For a quick-reference walkthrough, see
 **[docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)**.
+
+For the complete, book-length version — a 32-page PDF covering the
+origin story, every file explained in plain language, the full
+development history, both real bugs found and fixed (with a
+walk-through of how), every design trade-off, and a guide to extending
+the project — see
+**[docs/book/NetSimX_Documentation.pdf](docs/book/NetSimX_Documentation.pdf)**
+(the editable Word source is alongside it as `NetSimX_Documentation.docx`).
 
 ## License
 
