@@ -46,9 +46,10 @@ fails to start.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/screenshot.png" alt="Fresh topology load, simulation paused"/><br/><sub><b>Fresh load</b> — 9-router topology, paused</sub></td>
-<td width="33%"><img src="docs/assets/screenshot-dashboard.png" alt="Simulation running with live charts"/><br/><sub><b>Running</b> — traffic flowing, charts live</sub></td>
-<td width="33%"><img src="docs/assets/screenshot-failure-reroute.png" alt="Link failure with automatic reroute"/><br/><sub><b>Failure</b> — link down (red dashed), auto-reroute</sub></td>
+<td width="25%"><img src="docs/screenshot.png" alt="Fresh topology load, simulation paused"/><br/><sub><b>Fresh load</b> — 9-router topology, paused</sub></td>
+<td width="25%"><img src="docs/assets/screenshot-dashboard.png" alt="Simulation running with live charts"/><br/><sub><b>Running</b> — traffic flowing, charts live</sub></td>
+<td width="25%"><img src="docs/assets/screenshot-failure-reroute.png" alt="Link failure with automatic reroute"/><br/><sub><b>Failure</b> — link down (red dashed), auto-reroute</sub></td>
+<td width="25%"><img src="docs/assets/screenshot-inspector.png" alt="Network inspector panel showing live router detail"/><br/><sub><b>Inspector</b> — live router/interface detail on click</sub></td>
 </tr>
 </table>
 
@@ -65,10 +66,10 @@ breakdown.
 
 | # | Module (from the design doc) | Where |
 |---|---|---|
-| 1 | Network Topology Builder | `model.NetworkTopology`, `gui.TopologyCanvas` (drag routers, click-add router/link, right-click fail) |
-| 2 | Packet Simulation Engine | `model.Packet`, `simulation.PacketGenerator`, `simulation.SimulationEngine` |
-| 3 | Routing Engine | `routing.DijkstraRouting`, `routing.BellmanFordRouting`, `routing.ECMPRouting`, `routing.RoutingTable` |
-| 4 | Congestion & Queue Management | `simulation.QueueManager`, `simulation.CongestionController`, bounded queues on `model.Router` |
+| 1 | Network Topology Builder | `model.NetworkTopology`, `gui.TopologyCanvas` (drag routers, click-add router/link, right-click context menu) |
+| 2 | Packet Simulation Engine | `model.Packet`, `simulation.PacketGenerator`, `simulation.SimulationEngine`, `gui.PacketInspectorPanel` (click any in-flight packet for live detail) |
+| 3 | Routing Engine | `routing.DijkstraRouting`, `routing.BellmanFordRouting`, `routing.ECMPRouting`, `routing.RoutingTable`, `gui.RoutingTablePanel` (live per-router routing table view) |
+| 4 | Congestion & Queue Management | `simulation.QueueManager`, `simulation.CongestionController`, bounded queues on `model.Router`, `Link.congest()`/`releaseCongestion()` (manual congestion injection via context menu) |
 | 5 | Traffic Generator | `simulation.TrafficGenerator` (Voice/Video/Web/Email/File Transfer profiles) |
 | 6 | Quality of Service (QoS) | `simulation.QoSScheduler` (strict priority scheduling) |
 | 7 | Network Failure Simulation | `simulation.FailureSimulator` (manual + chaos-mode random failures, auto-reroute) |
@@ -76,7 +77,7 @@ breakdown.
 | 9 | Load Balancing (ECMP) | `routing.ECMPRouting` (per-packet path selection across equal-cost routes) |
 | 10 | AI-Based Route Optimization | `ai.QLearningRouteOptimizer` (see note below) |
 | 11 | Performance Analytics | `analytics.StatisticsCollector`, `analytics.PerformanceSnapshot` |
-| 12 | Interactive Dashboard | `gui.NetSimXApp`, `gui.TopologyCanvas`, `gui.ChartsPanel`, `gui.ControlPanel`, `gui.LogConsole` |
+| 12 | Interactive Dashboard | `gui.NetSimXApp`, `gui.TopologyCanvas`, `gui.ChartsPanel`, `gui.ControlPanel`, `gui.LogConsole`, `gui.NetworkPanel`, `gui.PacketInspectorPanel`, `gui.RoutingTablePanel` |
 | 13 | Digital Twin Support | `persistence.TopologyIO` (JSON import/export), `config/sample-network.json` |
 
 ## Design notes
@@ -110,6 +111,35 @@ append-only time-series data. If you want actual SQLite-backed
 persistence, add `org.xerial:sqlite-jdbc` to `pom.xml` and swap
 `CsvExporter` for a small JDBC writer — `StatisticsCollector`'s
 `PerformanceSnapshot` objects already have everything a row needs.
+
+## Inspector panels & context menus
+
+Beyond the topology view, the right-side tab panel has three live inspectors:
+
+- **Network** — click any router to see its status, queue occupancy,
+  cumulative forwarded/dropped counts, active neighbors, and per-interface
+  detail (bandwidth, up/down state, utilization, congestion flag).
+- **Packet Inspector** — click any moving packet dot on the canvas to see
+  its live source/destination/protocol/TTL/size/priority/current
+  router/delay/state/checksum. Holds a direct reference to the packet
+  object, so the panel keeps updating in real time for as long as it's in
+  flight, then freezes on its final state once delivered or dropped.
+- **Routing Table** — click a router to see its complete live routing
+  table (destination, next hop, metric, hop count) from whichever
+  algorithm is currently active.
+
+**Right-click a router** for: Inspect, Routing Table, Disable/Enable,
+Generate Traffic From Here, Rename, Delete.
+
+**Right-click a link** for: Bandwidth, Latency, and Packet Loss % (each
+opens an editable dialog), Disable/Enable, Congest Link / Release
+Congestion, Delete. Packet Loss % is a genuine per-hop drop probability
+independent of congestion (`Link.lossProbability`) — a way to simulate
+line noise/bit errors separately from buffer overflow. Congest Link cuts
+a link's bandwidth to 10% of normal (remembering the original value so
+Release Congestion can restore it exactly) — a quick way to manually
+trigger visible queueing/backpressure for a demo without waiting for
+organic traffic to build it up.
 
 ## Using the dashboard
 
