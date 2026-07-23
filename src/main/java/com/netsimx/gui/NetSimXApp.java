@@ -18,9 +18,15 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.layout.Priority;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
@@ -35,9 +41,12 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -74,35 +83,24 @@ public class NetSimXApp extends Application {
     private final QLearningRouteOptimizer aiOptimizer = new QLearningRouteOptimizer();
     private Router pendingLinkSource = null;
 
+    private Stage stage;
+    private Scene scene;
+    private String currentTopologyName = "Untitled Simulation";
+    private BorderPane workspaceRoot;
+
     public static void main(String[] args) {
         launch(args);
     }
 
     @Override
     public void start(Stage stage) {
-        topology = loadInitialTopology();
-        engine = new SimulationEngine(topology);
-
-        canvas = new TopologyCanvas(900, 650);
-        canvas.setTopology(topology);
-        chartsPanel = new ChartsPanel();
-        logConsole = new LogConsole();
-        controls = new ControlPanel();
-        networkPanel = new NetworkPanel();
-        packetInspectorPanel = new PacketInspectorPanel();
-        routingTablePanel = new RoutingTablePanel();
-
-        wireEngineListeners();
-        wireControlHandlers();
-        wireCanvasHandlers();
+        this.stage = stage;
 
         var visualBounds = Screen.getPrimary().getVisualBounds();
         double windowWidth = Math.min(1400, visualBounds.getWidth() * 0.95);
         double windowHeight = Math.min(820, visualBounds.getHeight() * 0.9);
 
-        BorderPane root = buildLayout();
-
-        Scene scene = new Scene(root, windowWidth, windowHeight);
+        scene = new Scene(new javafx.scene.layout.StackPane(), windowWidth, windowHeight);
         var cssUrl = getClass().getResource("/com/netsimx/gui/dashboard.css");
         if (cssUrl != null) scene.getStylesheets().add(cssUrl.toExternalForm());
 
@@ -111,20 +109,147 @@ public class NetSimXApp extends Application {
         stage.centerOnScreen();
         stage.show();
 
-        engine.recomputeRoutes();
-        buildDefaultDemoFlows();
-
-        startClocks();
-        logConsole.append("NetSimX ready. " + topology.routerCount() + " routers, " + topology.linkCount() + " links loaded.");
-
-        if (Boolean.getBoolean("netsimx.demo")) {
-            runDemoSequence();
-        }
-
         stage.setOnCloseRequest(e -> {
             if (simTimeline != null) simTimeline.stop();
             if (animationTimer != null) animationTimer.stop();
         });
+
+        if (Boolean.getBoolean("netsimx.demo")) {
+            // Demo/GIF-recording mode bypasses the splash/dashboard/wizard flow
+            // entirely and drops straight into the workspace, preserving the
+            // exact automated screenshot/recording harness used for the README.
+            enterWorkspace(loadInitialTopology(), "Campus LAN (sample)", null, null);
+            runDemoSequence();
+        } else {
+            showSplash();
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+    // Navigation
+    // ------------------------------------------------------------------ //
+
+    private void showSplash() {
+        SplashScreen splash = new SplashScreen(
+                this::showWizard,
+                this::openProjectFileChooser,
+                this::showBenchmarkScreen,
+                this::showDocumentation);
+        scene.setRoot(splash);
+    }
+
+    private void showDashboard() {
+        HomeDashboard dashboard = new HomeDashboard(
+                com.netsimx.persistence.RecentProjects.load(),
+                this::openRecentProject,
+                this::showWizard,
+                this::openProjectFileChooser,
+                this::showBenchmarkScreen,
+                this::openSampleTopologiesDialog,
+                () -> { if (simTimeline != null) simTimeline.stop(); if (animationTimer != null) animationTimer.stop(); stage.close(); });
+        scene.setRoot(dashboard);
+    }
+
+    private void showWizard() {
+        NewSimulationWizard wizard = new NewSimulationWizard(this::showSplash, this::onWizardComplete);
+        scene.setRoot(wizard);
+    }
+
+    private void showBenchmarkScreen() {
+        BenchmarkScreen benchmarkScreen = new BenchmarkScreen(this::returnFromSideScreen);
+        scene.setRoot(benchmarkScreen);
+    }
+
+    private void showReportScreen() {
+        if (engine == null) return; // no workspace session active
+        ReportScreen report = new ReportScreen(engine, currentTopologyName, this::returnFromSideScreen);
+        scene.setRoot(report);
+    }
+
+    private void showDocumentation() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("NetSimX Documentation");
+        alert.setHeaderText("NetSimX \u2014 Intelligent Network Routing & Traffic Simulator");
+        alert.setContentText(
+                "Full documentation lives in this project's README.md, including:\n\n" +
+                "\u2022 Module-by-module architecture overview\n" +
+                "\u2022 How the simulation loop works (traffic, QoS, congestion, TCP/UDP, failures)\n" +
+                "\u2022 Dashboard controls and inspector panels\n" +
+                "\u2022 JSON topology format for Load/Save\n\n" +
+                "Open README.md in the project root to read it.");
+        alert.showAndWait();
+    }
+
+    /** "Back" from a side screen (Benchmark/Report) returns to the workspace if one is active, otherwise the splash screen. */
+    private void returnFromSideScreen() {
+        if (workspaceRoot != null) {
+            scene.setRoot(workspaceRoot);
+        } else {
+            showSplash();
+        }
+    }
+
+    private void openRecentProject(String path) {
+        try {
+            NetworkTopology loaded = TopologyIO.load(Path.of(path));
+            com.netsimx.persistence.RecentProjects.addAndSave(path);
+            String name = Path.of(path).getFileName().toString();
+            enterWorkspace(loaded, name, null, null);
+        } catch (IOException | RuntimeException ex) {
+            showError("Failed to open project", ex.getMessage());
+        }
+    }
+
+    private void openProjectFileChooser() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Open Network Topology (JSON)");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON", "*.json"));
+        var file = chooser.showOpenDialog(stage);
+        if (file == null) return;
+        try {
+            NetworkTopology loaded = TopologyIO.load(file.toPath());
+            com.netsimx.persistence.RecentProjects.addAndSave(file.getAbsolutePath());
+            enterWorkspace(loaded, file.getName(), null, null);
+        } catch (IOException | RuntimeException ex) {
+            showError("Failed to open project", ex.getMessage());
+        }
+    }
+
+    private void openSampleTopologiesDialog() {
+        Path samplesDir = Path.of("config", "samples");
+        List<String> names = new ArrayList<>();
+        Map<String, Path> pathsByName = new java.util.LinkedHashMap<>();
+        try (var stream = Files.list(samplesDir)) {
+            stream.filter(p -> p.toString().endsWith(".json")).sorted().forEach(p -> {
+                String label = p.getFileName().toString().replace(".json", "").replace("-", " ");
+                names.add(label);
+                pathsByName.put(label, p);
+            });
+        } catch (IOException e) {
+            showError("Sample topologies not found", "Could not read " + samplesDir.toAbsolutePath());
+            return;
+        }
+        if (names.isEmpty()) {
+            showError("No sample topologies found", samplesDir.toAbsolutePath().toString());
+            return;
+        }
+
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(names.get(0), names);
+        dialog.setTitle("Open Sample Topology");
+        dialog.setHeaderText("Choose a sample network to load");
+        dialog.showAndWait().ifPresent(choice -> {
+            try {
+                NetworkTopology loaded = TopologyIO.load(pathsByName.get(choice));
+                enterWorkspace(loaded, choice, null, null);
+            } catch (IOException ex) {
+                showError("Failed to load sample", ex.getMessage());
+            }
+        });
+    }
+
+    private void onWizardComplete(NewSimulationWizard.WizardResult result) {
+        NetworkTopology generated = com.netsimx.topology.TopologyGenerator.generate(result.template(), result.routerCount());
+        enterWorkspace(generated, result.name(), result.trafficPreset(), result.algorithmName());
     }
 
     /**
@@ -168,6 +293,7 @@ public class NetSimXApp extends Application {
 
     private BorderPane buildLayout() {
         BorderPane root = new BorderPane();
+        root.setTop(buildWorkspaceTopBar());
 
         Pane canvasHost = new Pane(canvas);
         canvas.widthProperty().bind(canvasHost.widthProperty());
@@ -206,6 +332,34 @@ public class NetSimXApp extends Application {
         return root;
     }
 
+    private javafx.scene.layout.HBox buildWorkspaceTopBar() {
+        Label title = new Label(currentTopologyName);
+        title.setStyle("-fx-text-fill: #8fb4d6; -fx-font-size: 12px; -fx-font-weight: bold;");
+
+        Button home = navBarButton("\uD83C\uDFE0 Home");
+        home.setOnAction(e -> showDashboard());
+        Button benchmark = navBarButton("\uD83D\uDCCA Benchmark");
+        benchmark.setOnAction(e -> showBenchmarkScreen());
+        Button report = navBarButton("\uD83D\uDCC4 Report");
+        report.setOnAction(e -> showReportScreen());
+
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        javafx.scene.layout.HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        javafx.scene.layout.HBox bar = new javafx.scene.layout.HBox(10, home, benchmark, report, spacer, title);
+        bar.setPadding(new Insets(8, 14, 8, 14));
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setStyle("-fx-background-color: #10141c; -fx-border-color: transparent transparent #1e2635 transparent; -fx-border-width: 0 0 1 0;");
+        return bar;
+    }
+
+    private Button navBarButton(String text) {
+        Button b = new Button(text);
+        b.setStyle("-fx-background-color: #1b2436; -fx-text-fill: #d6e4f0; -fx-font-size: 11.5px; " +
+                "-fx-padding: 6 14; -fx-background-radius: 5; -fx-cursor: hand;");
+        return b;
+    }
+
     // ------------------------------------------------------------------ //
     // Initial topology
     // ------------------------------------------------------------------ //
@@ -227,11 +381,77 @@ public class NetSimXApp extends Application {
         }
     }
 
-    private void buildDefaultDemoFlows() {
-        if (topology.getRouter("R1") != null && topology.getRouter("R3") != null) {
-            engine.getTrafficGenerator().addFlow(
-                    new TrafficGenerator.Flow("R1", "R3", TrafficGenerator.TrafficType.WEB, 0.2));
-            controls.flowsList.getItems().add("R1 -> R3 [WEB]");
+    /**
+     * Tears down any previous workspace session (stopping its clocks so they
+     * don't keep ticking in the background) and builds a brand new one
+     * around {@code initialTopology}. This is the single entry point every
+     * navigation path funnels through: the wizard, "Open Project", "Open
+     * Sample Topology", a recent-project double-click, and demo mode.
+     */
+    private void enterWorkspace(NetworkTopology initialTopology, String topologyName,
+                                 NewSimulationWizard.TrafficPreset trafficPreset, String algorithmName) {
+        if (simTimeline != null) simTimeline.stop();
+        if (animationTimer != null) animationTimer.stop();
+        lastFrameNanos = -1;
+
+        topology = initialTopology;
+        currentTopologyName = topologyName;
+        engine = new SimulationEngine(topology);
+
+        canvas = new TopologyCanvas(900, 650);
+        canvas.setTopology(topology);
+        chartsPanel = new ChartsPanel();
+        logConsole = new LogConsole();
+        controls = new ControlPanel();
+        networkPanel = new NetworkPanel();
+        packetInspectorPanel = new PacketInspectorPanel();
+        routingTablePanel = new RoutingTablePanel();
+
+        wireEngineListeners();
+        wireControlHandlers();
+        wireCanvasHandlers();
+
+        workspaceRoot = buildLayout();
+        scene.setRoot(workspaceRoot);
+
+        if (algorithmName != null) {
+            engine.setRoutingAlgorithm(algorithmFor(algorithmName));
+            controls.algorithmCombo.getSelectionModel().select(algorithmName);
+        }
+        engine.recomputeRoutes();
+        if (trafficPreset != null) applyTrafficPreset(trafficPreset);
+
+        startClocks();
+        logConsole.append("Workspace ready: \"" + topologyName + "\" \u2014 " +
+                topology.routerCount() + " routers, " + topology.linkCount() + " links.");
+    }
+
+    /** Seeds a small starter set of traffic flows matching the wizard's chosen preset. */
+    private void applyTrafficPreset(NewSimulationWizard.TrafficPreset preset) {
+        List<Router> up = topology.getRouters().stream().filter(Router::isUp).toList();
+        if (up.size() < 2) return;
+
+        TrafficGenerator.TrafficType primaryType = switch (preset) {
+            case VIDEO_HEAVY -> TrafficGenerator.TrafficType.VIDEO;
+            case VOICE_HEAVY -> TrafficGenerator.TrafficType.VOICE;
+            case HTTP_HEAVY -> TrafficGenerator.TrafficType.WEB;
+            case RANDOM -> null; // handled by addRandomFlow's own weighted mix
+        };
+
+        int flowCount = Math.min(3, up.size() - 1);
+        for (int i = 0; i < flowCount; i++) {
+            if (primaryType == null) {
+                var flow = engine.getTrafficGenerator().addRandomFlow(topology);
+                if (flow != null) controls.flowsList.getItems().add(
+                        String.format("%s -> %s [%s]", flow.sourceId, flow.destinationId, flow.type));
+            } else {
+                Router src = up.get(uiRandom.nextInt(up.size()));
+                Router dst;
+                do { dst = up.get(uiRandom.nextInt(up.size())); } while (dst == src);
+                var flow = new TrafficGenerator.Flow(src.getId(), dst.getId(), primaryType, 0.25);
+                engine.getTrafficGenerator().addFlow(flow);
+                controls.flowsList.getItems().add(String.format("%s -> %s [%s]", src.getId(), dst.getId(), primaryType));
+            }
         }
     }
 
