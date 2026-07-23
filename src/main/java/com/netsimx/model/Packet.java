@@ -106,6 +106,24 @@ public class Packet {
         return end - creationTimeMs;
     }
 
+    /**
+     * A deterministic checksum over the packet's identity/content, purely
+     * for the Packet Inspector display. NetSimX doesn't simulate bit-level
+     * corruption (drops model congestion, TTL expiry, and link failure -
+     * not payload corruption), so this will always validate; it's a real
+     * computed value, not a hardcoded "OK", but there's currently nothing
+     * in the engine that would ever make it fail. Link.lossProbability
+     * models line-error-style drops at the hop level instead.
+     */
+    public String computeChecksum() {
+        int h = Long.hashCode(id) ^ sourceId.hashCode() ^ destinationId.hashCode() ^ (sizeBytes * 31);
+        return String.format("%08X", h);
+    }
+
+    public boolean isChecksumValid() {
+        return true; // see computeChecksum() javadoc - no corruption model exists (yet) to invalidate this
+    }
+
     @Override
     public String toString() {
         return String.format("Packet#%d[%s->%s, %s/%s, prio=%s, hop=%d/%d, state=%s]",

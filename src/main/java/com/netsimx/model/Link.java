@@ -19,6 +19,16 @@ public class Link {
     private long packetsCarried = 0;
     private double utilization = 0.0; // rolling estimate, 0..1
 
+    /** Independent per-hop drop probability (0..1), simulating line noise/bit
+     *  errors separate from congestion-caused buffer overflow. Applied once
+     *  per packet crossing, in SimulationEngine. */
+    private double lossProbability = 0.0;
+
+    /** Set by "Congest Link" (context menu); remembers the pre-congestion
+     *  bandwidth so it can be restored by "Release Congestion". */
+    private boolean congested = false;
+    private double preCongestionBandwidthPps = -1;
+
     public Link(String id, String routerAId, String routerBId, double cost, double latencyMs, double bandwidthPps) {
         this.id = id;
         this.routerAId = routerAId;
@@ -40,6 +50,31 @@ public class Link {
 
     public double getBandwidthPps() { return bandwidthPps; }
     public void setBandwidthPps(double bandwidthPps) { this.bandwidthPps = bandwidthPps; }
+
+    public double getLossProbability() { return lossProbability; }
+    public void setLossProbability(double lossProbability) {
+        this.lossProbability = Math.max(0, Math.min(1, lossProbability));
+    }
+
+    public boolean isCongested() { return congested; }
+
+    /** Cuts bandwidth to a fraction of its normal value to simulate artificial congestion. */
+    public void congest(double fractionOfNormal) {
+        if (!congested) {
+            preCongestionBandwidthPps = bandwidthPps;
+            congested = true;
+        }
+        bandwidthPps = Math.max(1, preCongestionBandwidthPps * fractionOfNormal);
+    }
+
+    /** Restores the bandwidth that was in effect before {@link #congest}. */
+    public void releaseCongestion() {
+        if (congested && preCongestionBandwidthPps > 0) {
+            bandwidthPps = preCongestionBandwidthPps;
+        }
+        congested = false;
+        preCongestionBandwidthPps = -1;
+    }
 
     public boolean isUp() { return up; }
     public void setUp(boolean up) { this.up = up; }
