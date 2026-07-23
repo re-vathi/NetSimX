@@ -240,6 +240,9 @@ traffic jam reads as 1 event, not 50.
 ```
 netsimx/
 ├── pom.xml
+├── LICENSE
+├── CHANGELOG.md
+├── CONTRIBUTING.md
 ├── .github/workflows/ci.yml     # GitHub Actions: build + test on JDK 17 & 21
 ├── config/
 │   ├── sample-network.json      # 9-router demo topology loaded on startup (demo mode)
@@ -361,10 +364,24 @@ will find that a few minutes of clicking around the dashboard won't.
   topologies (state space grows as routers × destinations) — fine for
   classroom-sized networks, would need function approximation (e.g. a
   small neural net) for anything bigger.
+- The canvas redraws every router/link/packet from scratch every frame,
+  with no dirty-region tracking. Not tested beyond the ~15-router
+  topologies this project ships with — could plausibly get slow on a
+  much larger generated network.
+- TCP here is fixed-count retry-with-timeout, not real congestion
+  control — no slow start, no AIMD window growth. Enough to show the
+  TCP-vs-UDP behavioral difference, not enough to model real TCP
+  throughput degradation under load.
 - QoS here is strict-priority only (no token buckets or weighted fair
   queueing), matching the priority list in the design doc.
+- ECMP caps at 8 equal-cost paths per destination — a real limitation on
+  a dense enough mesh, not just a performance guard.
 - BGP, MPLS, IPv6, SDN/NFV, and the other "Future Scope" items from the
   design doc are intentionally out of scope for this build.
+
+These (plus a couple of smaller ones) are also marked as `TODO`/`FIXME`
+comments at the exact spots in the code they apply to, rather than only
+living in this list.
 
 ## Full project documentation
 
