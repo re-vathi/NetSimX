@@ -45,6 +45,7 @@ public class SimulationEngine {
     private CongestionController congestionController;
 
     private final List<SimulationListener> listeners = new CopyOnWriteArrayList<>();
+    private final Random random = new Random();
 
     private long simTimeMs = 0;
     private long tickIntervalMs = 100; // simulated ms per tick
@@ -280,6 +281,11 @@ public class SimulationEngine {
             return;
         }
         linkSentThisTick.merge(link.getId(), 1, Integer::sum);
+
+        if (link.getLossProbability() > 0 && random.nextDouble() < link.getLossProbability()) {
+            dropPacket(packet, String.format("line error on %s (p=%.0f%%)", link.getId(), link.getLossProbability() * 100));
+            return;
+        }
 
         boolean ttlOk = packet.advanceHop();
         if (!ttlOk) {
