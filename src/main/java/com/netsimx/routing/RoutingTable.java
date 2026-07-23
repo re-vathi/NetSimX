@@ -48,6 +48,15 @@ public class RoutingTable {
         return Optional.ofNullable(fromSource.get(destinationId));
     }
 
+    /**
+     * All computed routes originating at {@code sourceId}, keyed by
+     * destination router ID. Used by the Routing Table inspector tab.
+     * Returns an empty map if the router is unknown or currently down.
+     */
+    public Map<String, RoutingAlgorithm.RouteResult> getRoutesFrom(String sourceId) {
+        return table.getOrDefault(sourceId, Map.of());
+    }
+
     public long getLastRecomputeTimeMs() { return lastRecomputeTimeMs; }
     public int getRecomputeCount() { return recomputeCount; }
 }
