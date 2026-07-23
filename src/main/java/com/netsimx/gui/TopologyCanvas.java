@@ -7,6 +7,7 @@ import com.netsimx.model.Router;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -36,8 +37,9 @@ public class TopologyCanvas extends Canvas {
 
     private Consumer<Router> onRouterSelected;
     private Consumer<Link> onLinkSelected;
-    private BiConsumer<Router, Boolean> onRouterToggleRequested;
-    private BiConsumer<Link, Boolean> onLinkToggleRequested;
+    private Consumer<Packet> onPacketSelected;
+    private BiConsumer<Router, MouseEvent> onRouterContextMenu;
+    private BiConsumer<Link, MouseEvent> onLinkContextMenu;
     private BiConsumer<Double, Double> onEmptyAreaClicked;
 
     private static class PacketAnim {
@@ -45,6 +47,7 @@ public class TopologyCanvas extends Canvas {
         String fromId;
         String toId;
         Color color;
+        Packet packet; // live reference - keeps the inspector panel up to date while in flight
     }
 
     public TopologyCanvas(double width, double height) {
@@ -61,13 +64,14 @@ public class TopologyCanvas extends Canvas {
 
     public void setOnRouterSelected(Consumer<Router> handler) { this.onRouterSelected = handler; }
     public void setOnLinkSelected(Consumer<Link> handler) { this.onLinkSelected = handler; }
+    public void setOnPacketSelected(Consumer<Packet> handler) { this.onPacketSelected = handler; }
     public void setOnEmptyAreaClicked(BiConsumer<Double, Double> handler) { this.onEmptyAreaClicked = handler; }
 
     public Router getSelectedRouter() { return selectedRouter; }
     public Link getSelectedLink() { return selectedLink; }
     public void clearSelection() { selectedRouter = null; selectedLink = null; }
-    public void setOnRouterToggleRequested(BiConsumer<Router, Boolean> handler) { this.onRouterToggleRequested = handler; }
-    public void setOnLinkToggleRequested(BiConsumer<Link, Boolean> handler) { this.onLinkToggleRequested = handler; }
+    public void setOnRouterContextMenu(BiConsumer<Router, MouseEvent> handler) { this.onRouterContextMenu = handler; }
+    public void setOnLinkContextMenu(BiConsumer<Link, MouseEvent> handler) { this.onLinkContextMenu = handler; }
 
     // ------------------------------------------------------------------ //
     // Mouse interaction
@@ -76,8 +80,15 @@ public class TopologyCanvas extends Canvas {
     private void setupMouseHandlers() {
         setOnMousePressed(e -> {
             if (topology == null) return;
-            Router hit = routerAt(e.getX(), e.getY());
+
             if (e.getButton() == MouseButton.PRIMARY) {
+                Packet packetHit = packetAt(e.getX(), e.getY());
+                if (packetHit != null) {
+                    if (onPacketSelected != null) onPacketSelected.accept(packetHit);
+                    return;
+                }
+
+                Router hit = routerAt(e.getX(), e.getY());
                 if (hit != null) {
                     draggingRouter = hit;
                     selectedRouter = hit;
@@ -95,13 +106,12 @@ public class TopologyCanvas extends Canvas {
                 }
                 redraw();
             } else if (e.getButton() == MouseButton.SECONDARY) {
-                if (hit != null && onRouterToggleRequested != null) {
-                    onRouterToggleRequested.accept(hit, !hit.isUp());
+                Router hit = routerAt(e.getX(), e.getY());
+                if (hit != null) {
+                    if (onRouterContextMenu != null) onRouterContextMenu.accept(hit, e);
                 } else {
                     Link linkHit = linkAt(e.getX(), e.getY());
-                    if (linkHit != null && onLinkToggleRequested != null) {
-                        onLinkToggleRequested.accept(linkHit, !linkHit.isUp());
-                    }
+                    if (linkHit != null && onLinkContextMenu != null) onLinkContextMenu.accept(linkHit, e);
                 }
             }
         });
@@ -116,6 +126,21 @@ public class TopologyCanvas extends Canvas {
     }
 
     private double clamp(double v, double lo, double hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    /** Hit-test the animated packet dots (checked before routers/links since they're the smallest, most specific target). */
+    private Packet packetAt(double x, double y) {
+        if (topology == null) return null;
+        for (PacketAnim anim : animatedPackets.values()) {
+            Router a = topology.getRouter(anim.fromId);
+            Router b = topology.getRouter(anim.toId);
+            if (a == null || b == null) continue;
+            double px = a.getX() + (b.getX() - a.getX()) * anim.progress;
+            double py = a.getY() + (b.getY() - a.getY()) * anim.progress;
+            double dx = px - x, dy = py - y;
+            if (Math.sqrt(dx * dx + dy * dy) <= 9) return anim.packet;
+        }
+        return null;
+    }
 
     private Router routerAt(double x, double y) {
         if (topology == null) return null;
@@ -159,6 +184,7 @@ public class TopologyCanvas extends Canvas {
         anim.fromId = fromId;
         anim.toId = toId;
         anim.color = colorForPriority(packet.getPriority().ordinal());
+        anim.packet = packet;
     }
 
     public void onPacketFinished(Packet packet) {
