@@ -47,10 +47,19 @@ public class TcpUdpManager {
     public long getTcpGiveUpCount() { return tcpGiveUpCount; }
     public int getPendingCount() { return awaitingAck.size(); }
 
-    /** Call whenever a fresh (non-ACK) TCP packet is handed to the network. */
+    /**
+     * Call whenever a fresh (non-ACK) TCP packet is handed to the network.
+     * Uses putIfAbsent rather than put deliberately: {@link #checkTimeouts}
+     * and {@link #onDropped} both pre-register a retry's PendingTcp entry
+     * (with the attempt count already incremented) before handing the
+     * retry back to the engine, which then calls this method again for
+     * that same packet as part of normal admission. A plain put here would
+     * clobber the incremented attempt count back to 1 every time,
+     * effectively disabling the max-retransmission ceiling.
+     */
     public void onTcpPacketSent(Packet packet, long nowMs) {
         if (packet.getProtocol() != Protocol.TCP || packet.isAck()) return;
-        awaitingAck.put(packet.getId(), new PendingTcp(packet, nowMs, 1));
+        awaitingAck.putIfAbsent(packet.getId(), new PendingTcp(packet, nowMs, 1));
     }
 
     /**
@@ -109,6 +118,7 @@ public class TcpUdpManager {
     public List<Packet> checkTimeouts(long nowMs) {
         List<Packet> retries = new ArrayList<>();
         List<Long> expired = new ArrayList<>();
+        Map<Long, PendingTcp> toAdd = new LinkedHashMap<>();
 
         for (var entry : awaitingAck.entrySet()) {
             PendingTcp pending = entry.getValue();
@@ -123,10 +133,13 @@ public class TcpUdpManager {
                     pending.original.getSizeBytes(), 32, pending.original.getPriority(), Protocol.TCP, nowMs);
             retry.setRetransmission(true);
             retransmissionCount++;
-            awaitingAck.put(retry.getId(), new PendingTcp(retry, nowMs, pending.attempts + 1));
+            toAdd.put(retry.getId(), new PendingTcp(retry, nowMs, pending.attempts + 1));
             retries.add(retry);
         }
+        // Mutate the map only after iteration completes - mutating during the
+        // for-each above throws ConcurrentModificationException.
         for (Long id : expired) awaitingAck.remove(id);
+        awaitingAck.putAll(toAdd);
         return retries;
     }
 
