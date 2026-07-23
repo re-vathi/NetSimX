@@ -20,10 +20,13 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
@@ -35,6 +38,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Random;
 
 /**
  * Module 12 - Interactive Dashboard entry point. Wires the headless
@@ -52,6 +57,15 @@ public class NetSimXApp extends Application {
     private ChartsPanel chartsPanel;
     private LogConsole logConsole;
     private ControlPanel controls;
+    private NetworkPanel networkPanel;
+    private PacketInspectorPanel packetInspectorPanel;
+    private RoutingTablePanel routingTablePanel;
+    private TabPane rightTabs;
+    private Tab networkTab;
+    private Tab packetInspectorTab;
+    private Tab routingTableTab;
+
+    private final Random uiRandom = new Random();
 
     private Timeline simTimeline;
     private AnimationTimer animationTimer;
@@ -74,6 +88,9 @@ public class NetSimXApp extends Application {
         chartsPanel = new ChartsPanel();
         logConsole = new LogConsole();
         controls = new ControlPanel();
+        networkPanel = new NetworkPanel();
+        packetInspectorPanel = new PacketInspectorPanel();
+        routingTablePanel = new RoutingTablePanel();
 
         wireEngineListeners();
         wireControlHandlers();
@@ -162,11 +179,24 @@ public class NetSimXApp extends Application {
         ScrollPane chartsScroll = new ScrollPane(chartsPanel);
         chartsScroll.setFitToWidth(true);
 
+        ScrollPane networkScroll = new ScrollPane(networkPanel);
+        networkScroll.setFitToWidth(true);
+        ScrollPane packetScroll = new ScrollPane(packetInspectorPanel);
+        packetScroll.setFitToWidth(true);
+        ScrollPane routingScroll = new ScrollPane(routingTablePanel);
+        routingScroll.setFitToWidth(true);
+
+        networkTab = new Tab("Network", networkScroll);
+        networkTab.setClosable(false);
+        packetInspectorTab = new Tab("Packet Inspector", packetScroll);
+        packetInspectorTab.setClosable(false);
+        routingTableTab = new Tab("Routing Table", routingScroll);
+        routingTableTab.setClosable(false);
         Tab chartsTab = new Tab("Live Charts", chartsScroll);
         chartsTab.setClosable(false);
         Tab logTab = new Tab("Event Log", logConsole);
         logTab.setClosable(false);
-        TabPane rightTabs = new TabPane(chartsTab, logTab);
+        rightTabs = new TabPane(networkTab, packetInspectorTab, routingTableTab, chartsTab, logTab);
         rightTabs.setPrefWidth(380);
 
         SplitPane split = new SplitPane(controls, canvasScroll, rightTabs);
@@ -265,6 +295,7 @@ public class NetSimXApp extends Application {
             engine.reset();
             chartsPanel.clear();
             canvas.clearSelection();
+            packetInspectorPanel.show(null);
             canvas.redraw();
             updateStatLabels();
             logConsole.append("Simulation reset.");
@@ -293,17 +324,10 @@ public class NetSimXApp extends Application {
             Router r = canvas.getSelectedRouter();
             Link l = canvas.getSelectedLink();
             if (r != null) {
-                topology.removeRouter(r.getId());
-                logConsole.append("Removed router " + r.getId());
+                removeRouterAction(r);
             } else if (l != null) {
-                topology.removeLink(l.getId());
-                logConsole.append("Removed link " + l.getId());
-            } else {
-                return;
+                removeLinkAction(l);
             }
-            canvas.clearSelection();
-            engine.recomputeRoutes();
-            canvas.redraw();
         });
 
         controls.loadTopologyButton.setOnAction(e -> onLoadTopology());
@@ -354,6 +378,9 @@ public class NetSimXApp extends Application {
             controls.flowsList.getItems().clear();
             chartsPanel.clear();
             canvas.clearSelection();
+            networkPanel.show(null, topology);
+            routingTablePanel.show(null, topology, engine.getRoutingTable());
+            packetInspectorPanel.show(null);
             canvas.redraw();
             updateStatLabels();
             logConsole.append("Loaded topology from " + file.getName() + " (" +
@@ -448,32 +475,185 @@ public class NetSimXApp extends Application {
         });
 
         canvas.setOnRouterSelected(router -> {
-            if (!controls.addLinkModeButton.isSelected()) return;
-            if (pendingLinkSource == null) {
-                pendingLinkSource = router;
-                logConsole.append("Link mode: " + router.getId() + " selected as source \u2014 click a destination router.");
-            } else if (pendingLinkSource != router) {
-                if (topology.findLinkBetween(pendingLinkSource.getId(), router.getId()).isEmpty()) {
-                    String id = nextLinkId();
-                    topology.addLink(new Link(id, pendingLinkSource.getId(), router.getId(), 1, 5, 100));
-                    engine.recomputeRoutes();
-                    logConsole.append("Added link " + id + ": " + pendingLinkSource.getId() + " <-> " + router.getId());
-                } else {
-                    logConsole.append("Link already exists between " + pendingLinkSource.getId() + " and " + router.getId());
+            if (controls.addLinkModeButton.isSelected()) {
+                if (pendingLinkSource == null) {
+                    pendingLinkSource = router;
+                    logConsole.append("Link mode: " + router.getId() + " selected as source \u2014 click a destination router.");
+                } else if (pendingLinkSource != router) {
+                    if (topology.findLinkBetween(pendingLinkSource.getId(), router.getId()).isEmpty()) {
+                        String id = nextLinkId();
+                        topology.addLink(new Link(id, pendingLinkSource.getId(), router.getId(), 1, 5, 100));
+                        engine.recomputeRoutes();
+                        logConsole.append("Added link " + id + ": " + pendingLinkSource.getId() + " <-> " + router.getId());
+                    } else {
+                        logConsole.append("Link already exists between " + pendingLinkSource.getId() + " and " + router.getId());
+                    }
+                    pendingLinkSource = null;
+                    canvas.redraw();
                 }
-                pendingLinkSource = null;
-                canvas.redraw();
+            } else {
+                // Normal click (not building a link): feed the inspector panels so
+                // whichever tab the user switches to shows this router's live data.
+                networkPanel.show(router, topology);
+                routingTablePanel.show(router, topology, engine.getRoutingTable());
             }
         });
 
-        canvas.setOnRouterToggleRequested((router, up) -> {
-            engine.setRouterUp(router, up);
+        canvas.setOnPacketSelected(packet -> {
+            packetInspectorPanel.show(packet, topology, engine.getSimTimeMs());
+            rightTabs.getSelectionModel().select(packetInspectorTab);
+        });
+
+        canvas.setOnRouterContextMenu((router, mouseEvent) ->
+                buildRouterContextMenu(router).show(canvas, mouseEvent.getScreenX(), mouseEvent.getScreenY()));
+        canvas.setOnLinkContextMenu((link, mouseEvent) ->
+                buildLinkContextMenu(link).show(canvas, mouseEvent.getScreenX(), mouseEvent.getScreenY()));
+    }
+
+    // ------------------------------------------------------------------ //
+    // Context menus (right-click a router or link on the canvas)
+    // ------------------------------------------------------------------ //
+
+    private ContextMenu buildRouterContextMenu(Router router) {
+        ContextMenu menu = new ContextMenu();
+
+        MenuItem inspect = new MenuItem("Inspect");
+        inspect.setOnAction(e -> {
+            networkPanel.show(router, topology);
+            rightTabs.getSelectionModel().select(networkTab);
+        });
+
+        MenuItem routingTableItem = new MenuItem("Routing Table");
+        routingTableItem.setOnAction(e -> {
+            routingTablePanel.show(router, topology, engine.getRoutingTable());
+            rightTabs.getSelectionModel().select(routingTableTab);
+        });
+
+        MenuItem toggle = new MenuItem(router.isUp() ? "Disable Router" : "Enable Router");
+        toggle.setOnAction(e -> {
+            engine.setRouterUp(router, !router.isUp());
+            canvas.redraw();
+            if (networkPanel.getCurrent() == router) networkPanel.refresh(topology);
+        });
+
+        MenuItem generateTraffic = new MenuItem("Generate Traffic From Here");
+        generateTraffic.setOnAction(e -> generateTrafficFrom(router));
+
+        MenuItem rename = new MenuItem("Rename...");
+        rename.setOnAction(e -> renameRouter(router));
+
+        MenuItem delete = new MenuItem("Delete");
+        delete.setOnAction(e -> removeRouterAction(router));
+
+        menu.getItems().addAll(inspect, routingTableItem, new javafx.scene.control.SeparatorMenuItem(),
+                toggle, generateTraffic, rename, new javafx.scene.control.SeparatorMenuItem(), delete);
+        return menu;
+    }
+
+    private ContextMenu buildLinkContextMenu(Link link) {
+        ContextMenu menu = new ContextMenu();
+
+        MenuItem bandwidth = new MenuItem("Bandwidth...");
+        bandwidth.setOnAction(e -> editLinkNumericProperty(link, "Bandwidth (packets/sec)",
+                link.getBandwidthPps(), link::setBandwidthPps));
+
+        MenuItem latency = new MenuItem("Latency...");
+        latency.setOnAction(e -> editLinkNumericProperty(link, "Latency (ms)",
+                link.getLatencyMs(), link::setLatencyMs));
+
+        MenuItem packetLoss = new MenuItem("Packet Loss %...");
+        packetLoss.setOnAction(e -> editLinkNumericProperty(link, "Packet loss probability (%)",
+                link.getLossProbability() * 100, pct -> link.setLossProbability(pct / 100.0)));
+
+        MenuItem toggle = new MenuItem(link.isUp() ? "Disable Link" : "Enable Link");
+        toggle.setOnAction(e -> {
+            engine.setLinkUp(link, !link.isUp());
             canvas.redraw();
         });
-        canvas.setOnLinkToggleRequested((link, up) -> {
-            engine.setLinkUp(link, up);
+
+        MenuItem congest = new MenuItem(link.isCongested() ? "Release Congestion" : "Congest Link (10%)");
+        congest.setOnAction(e -> {
+            if (link.isCongested()) link.releaseCongestion(); else link.congest(0.1);
             canvas.redraw();
+            logConsole.append((link.isCongested() ? "Congested " : "Released congestion on ") + link.getId());
         });
+
+        MenuItem delete = new MenuItem("Delete");
+        delete.setOnAction(e -> removeLinkAction(link));
+
+        menu.getItems().addAll(bandwidth, latency, packetLoss, new javafx.scene.control.SeparatorMenuItem(),
+                toggle, congest, new javafx.scene.control.SeparatorMenuItem(), delete);
+        return menu;
+    }
+
+    private void editLinkNumericProperty(Link link, String label, double currentValue, java.util.function.DoubleConsumer setter) {
+        TextInputDialog dialog = new TextInputDialog(String.valueOf(currentValue));
+        dialog.setTitle("Edit " + link.getId());
+        dialog.setHeaderText(label);
+        dialog.setContentText("Value:");
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(text -> {
+            try {
+                double value = Double.parseDouble(text.trim());
+                setter.accept(value);
+                canvas.redraw();
+                if (networkPanel.getCurrent() != null) networkPanel.refresh(topology);
+                logConsole.append("Updated " + link.getId() + ": " + label + " = " + value);
+            } catch (NumberFormatException ex) {
+                showError("Invalid value", "\"" + text + "\" isn't a valid number.");
+            }
+        });
+    }
+
+    private void renameRouter(Router router) {
+        TextInputDialog dialog = new TextInputDialog(router.getLabel());
+        dialog.setTitle("Rename " + router.getId());
+        dialog.setHeaderText("New display label for " + router.getId());
+        dialog.setContentText("Label:");
+        dialog.showAndWait().ifPresent(newLabel -> {
+            if (!newLabel.isBlank()) {
+                router.setLabel(newLabel.trim());
+                canvas.redraw();
+                if (networkPanel.getCurrent() == router) networkPanel.refresh(topology);
+                logConsole.append("Renamed " + router.getId() + " -> \"" + newLabel.trim() + "\"");
+            }
+        });
+    }
+
+    private void generateTrafficFrom(Router source) {
+        List<Router> candidates = topology.getRouters().stream()
+                .filter(r -> r.isUp() && r != source)
+                .toList();
+        if (candidates.isEmpty()) {
+            showError("Cannot generate traffic", "No other active router to send traffic to.");
+            return;
+        }
+        Router dest = candidates.get(uiRandom.nextInt(candidates.size()));
+        TrafficGenerator.TrafficType[] types = TrafficGenerator.TrafficType.values();
+        TrafficGenerator.TrafficType type = types[uiRandom.nextInt(types.length)];
+
+        TrafficGenerator.Flow flow = new TrafficGenerator.Flow(source.getId(), dest.getId(), type, 0.25);
+        engine.getTrafficGenerator().addFlow(flow);
+        controls.flowsList.getItems().add(String.format("%s -> %s [%s] (from context menu)", source.getId(), dest.getId(), type));
+        logConsole.append("Generated traffic flow " + source.getId() + " -> " + dest.getId() + " (" + type + ")");
+    }
+
+    private void removeRouterAction(Router router) {
+        topology.removeRouter(router.getId());
+        logConsole.append("Removed router " + router.getId());
+        if (networkPanel.getCurrent() == router) networkPanel.show(null, topology);
+        if (routingTablePanel.getCurrent() == router) routingTablePanel.show(null, topology, engine.getRoutingTable());
+        canvas.clearSelection();
+        engine.recomputeRoutes();
+        canvas.redraw();
+    }
+
+    private void removeLinkAction(Link link) {
+        topology.removeLink(link.getId());
+        logConsole.append("Removed link " + link.getId());
+        canvas.clearSelection();
+        engine.recomputeRoutes();
+        canvas.redraw();
     }
 
     private String nextRouterId() {
@@ -527,6 +707,10 @@ public class NetSimXApp extends Application {
 
         engine.tick();
         updateStatLabels();
+
+        if (networkPanel.getCurrent() != null) networkPanel.refresh(topology);
+        if (routingTablePanel.getCurrent() != null) routingTablePanel.refresh(topology, engine.getRoutingTable());
+        if (packetInspectorPanel.getCurrent() != null) packetInspectorPanel.refresh(topology, engine.getSimTimeMs());
 
         List<PerformanceSnapshot> history = engine.getStatistics().getHistory();
         if (!history.isEmpty()) {
