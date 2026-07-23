@@ -34,6 +34,11 @@ import java.util.*;
 public class QLearningRouteOptimizer implements RoutingAlgorithm {
 
     /** Q[state][action] where state = "currentRouterId|destinationId", action = neighborRouterId. */
+    // TODO: this is a plain tabular Q-table - one entry per (router, destination)
+    // pair. Fine for classroom-sized topologies, but it'll grow quadratically with
+    // router count. If someone wants this to handle 100+ router networks, swap in
+    // a small function-approximation model (even a tiny neural net) instead of
+    // trying to make the table itself faster.
     private final Map<String, Map<String, Double>> qTable = new HashMap<>();
 
     private double alpha = 0.3;   // learning rate

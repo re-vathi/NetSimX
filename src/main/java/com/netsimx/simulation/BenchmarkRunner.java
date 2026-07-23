@@ -75,6 +75,11 @@ public class BenchmarkRunner {
      * @param ticksPerRun       how many simulation ticks each run executes
      * @param progressListener  optional; may be null
      */
+    // TODO: runs happen sequentially on one background thread. Each run is fully
+    // independent (fresh topology, fresh engine) so this is an easy target for
+    // parallelizing across threads if someone wants faster benchmarks with high
+    // run counts - just didn't seem worth the complexity for the run counts this
+    // is actually used with (dozens, not thousands).
     public BenchmarkReport run(List<RoutingAlgorithm> algorithms,
                                 Supplier<NetworkTopology> topologySupplier,
                                 java.util.function.Consumer<SimulationEngine> flowConfigurator,

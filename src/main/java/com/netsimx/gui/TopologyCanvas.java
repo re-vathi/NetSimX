@@ -216,6 +216,11 @@ public class TopologyCanvas extends Canvas {
     // ------------------------------------------------------------------ //
 
     public void redraw() {
+        // TODO: this redraws every router/link/packet from scratch on every frame.
+        // Fine up to the ~15-router topologies this project ships with; if someone
+        // generates a much larger network (a few hundred routers), this will likely
+        // start costing real frame time. Worth revisiting with dirty-region tracking
+        // or an off-screen buffer if that ever becomes a real use case.
         GraphicsContext gc = getGraphicsContext2D();
         gc.setFill(Color.web("#0f1420"));
         gc.fillRect(0, 0, getWidth(), getHeight());

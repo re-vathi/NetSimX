@@ -116,7 +116,12 @@ public class ECMPRouting implements RoutingAlgorithm {
         } else if (depth < 64) { // guard against pathological graphs
             for (String pred : predecessors.getOrDefault(current, List.of())) {
                 reconstructPaths(pred, sourceId, predecessors, partial, out, depth + 1);
-                if (out.size() >= 8) break; // cap explosion of equal-cost paths for very meshy graphs
+                // FIXME: hard 8-path cap. Fine for every topology this project ships
+                // with, but on a dense enough mesh there could genuinely be more than
+                // 8 equal-cost paths, and this silently drops the rest instead of
+                // picking among all of them. Hasn't caused a problem in practice, but
+                // it's a real correctness gap, not just a performance guard.
+                if (out.size() >= 8) break;
             }
         }
         partial.removeFirst();

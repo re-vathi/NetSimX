@@ -19,6 +19,12 @@ import java.util.*;
  */
 public class TcpUdpManager {
 
+    // TODO: real TCP has a congestion window that grows/shrinks (slow start,
+    // AIMD, etc.) - this only models fixed-count retry-with-timeout, not actual
+    // congestion control. Good enough to show "TCP retries, UDP doesn't," not
+    // good enough to demonstrate why TCP throughput degrades gracefully under
+    // load the way it does on a real network.
+
     public static class PendingTcp {
         final Packet original;
         final long sentAtMs;

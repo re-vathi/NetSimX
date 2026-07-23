@@ -35,6 +35,11 @@ public final class MiniPdf {
 
     private final List<Line> lines = new ArrayList<>();
 
+    // TODO: text-only. No way to embed the topology screenshot or a chart into
+    // the generated PDF, which would honestly make these reports a lot more
+    // useful. Would mean implementing the PDF image XObject format by hand, or
+    // finally pulling in a real PDF library (see the README's design-notes
+    // section for why that hasn't happened yet).
     public MiniPdf addTitle(String text) {
         lines.add(new Line(text, LineStyle.TITLE));
         return this;

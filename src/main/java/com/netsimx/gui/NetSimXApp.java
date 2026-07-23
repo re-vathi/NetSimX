@@ -794,6 +794,10 @@ public class NetSimXApp extends Application {
         });
 
         MenuItem congest = new MenuItem(link.isCongested() ? "Release Congestion" : "Congest Link (10%)");
+        // TODO: 10% is hardcoded here. Link.congest() already takes a fraction as
+        // a parameter, so this could easily be a small dialog like the bandwidth/
+        // latency/loss editors above - just didn't seem worth the extra click for
+        // a demo feature. Would be a quick win if someone wants finer control.
         congest.setOnAction(e -> {
             if (link.isCongested()) link.releaseCongestion(); else link.congest(0.1);
             canvas.redraw();
