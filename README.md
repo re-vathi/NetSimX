@@ -131,6 +131,8 @@ Every simulated tick:
 That's the whole simulation. Everything in the dashboard is just a
 window into this loop running repeatedly.
 
+<img src="docs/assets/sequence-diagram-tick.png" alt="Sequence diagram of one simulation tick" width="800"/>
+
 ## Benchmarks
 
 Benchmark Mode runs each algorithm N independent times over the same
@@ -181,6 +183,26 @@ contained they are:
 - **BGP / MPLS / IPv6 / SDN** — explicitly out of scope for this
   version, but the routing-algorithm interface was built with exactly
   this kind of extension in mind.
+
+## Test coverage, honestly
+
+38 tests, but not evenly spread — worth knowing which parts are
+actually covered:
+
+| Package | Covered | Not covered |
+|---|---|---|
+| `model` | Link mechanics (loss probability, congest/release) | — |
+| `routing` | Dijkstra, Bellman-Ford, ECMP all cross-checked against each other | — |
+| `simulation` | Engine core, TCP retry/timeout (both real bugs live here), benchmark runner | — |
+| `topology` | Every generator template | — |
+| `persistence` | PDF generation, recent-projects list | JSON round-trip is only checked by the manual smoke script, not a JUnit test |
+| `ai` | — | Zero direct tests. Exercised manually through the dashboard, not automated |
+| `analytics` | Indirectly, through engine tests | No dedicated test file |
+| `gui` | — | Verified manually during development (screenshots + OCR checks), no automated UI tests |
+
+No coverage tool wired in (no JaCoCo in the build), so this table is
+from actually reading which test files exist and what they call — not
+a generated percentage.
 
 ## Two real bugs, found the hard way
 
