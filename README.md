@@ -7,14 +7,17 @@ forwarding, congestion, QoS, TCP/UDP behavior, failures, live charts,
 and an AI route optimizer, all running in an actual interactive
 dashboard instead of just printing numbers to a console.
 
+![Java](https://img.shields.io/badge/Java-17%2B-orange?logo=openjdk&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-4fc3f7?logo=java&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-38%20passing-43cf94)
+
+<img src="docs/assets/demo.gif" alt="NetSimX live demo" width="800"/>
+
+*Traffic flowing, a link failing mid-run, and the engine rerouting around it. Recorded straight from the running app.*
+
 </div>
 
 ---
-
-## Live Demo
-
-![NetSimX dashboard](docs/assets/screenshot-dashboard.png)
-*Traffic flowing across a 9-router topology, live charts updating in real time.*
 
 ## Why this exists
 
@@ -36,6 +39,32 @@ mvn package && java -jar target/netsimx.jar
 
 Needs JDK 17+. Everything besides JavaFX and JUnit is dependency-free —
 no SQLite, no PDF library, no JSON library, all hand-rolled.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="33%"><img src="docs/assets/screenshot-dashboard.png" alt="Dashboard running"/><br/><sub>Running — traffic flowing, charts live</sub></td>
+<td width="33%"><img src="docs/assets/screenshot-failure-reroute.png" alt="Link failure and reroute"/><br/><sub>Link down (red), auto-reroute</sub></td>
+<td width="33%"><img src="docs/assets/screenshot-inspector.png" alt="Inspector panel"/><br/><sub>Click a router to inspect it live</sub></td>
+</tr>
+<tr>
+<td width="33%"><img src="docs/assets/screenshot-wizard.png" alt="New Simulation Wizard"/><br/><sub>New Simulation Wizard</sub></td>
+<td width="33%"><img src="docs/assets/screenshot-benchmark.png" alt="Benchmark Mode results"/><br/><sub>Benchmark Mode — algorithm comparison</sub></td>
+<td width="33%"><img src="docs/assets/screenshot-report.png" alt="Report screen"/><br/><sub>Report screen — CSV/PDF export</sub></td>
+</tr>
+</table>
+
+## Architecture
+
+<img src="docs/assets/architecture-diagram.png" alt="Module architecture" width="800"/>
+
+Every box here is a real Java package, every arrow a real dependency —
+this diagram is generated from a small script, not drawn by hand, so it
+can't quietly drift out of sync with the actual code. Worth noting:
+nothing depends on `gui` — the simulation engine has no idea a graphical
+interface even exists, which is what makes headless benchmark runs
+possible in the first place.
 
 ## What's actually in here
 
@@ -88,14 +117,6 @@ Mode**. From inside a running simulation there's a Home button back to a
 dashboard with recent projects and a small library of sample topologies
 (Campus LAN, Enterprise, Data Center, ISP Backbone, Smart City IoT).
 
-**Benchmark mode** runs each algorithm N times over the same topology
-and traffic, headlessly, then compares them in a table + bar chart. Each
-run gets a fresh engine — matters most for the AI optimizer, since it
-starts cold every time instead of quietly learning across runs.
-
-**Report screen** dumps a summary of the current run — packets, loss
-rate, delay, congestion events, failures — with CSV and PDF export.
-
 ## How a tick actually works
 
 Every simulated tick:
@@ -109,6 +130,57 @@ Every simulated tick:
 
 That's the whole simulation. Everything in the dashboard is just a
 window into this loop running repeatedly.
+
+## Benchmarks
+
+Benchmark Mode runs each algorithm N independent times over the same
+topology and traffic, headlessly, then averages the results. Each run
+gets a fresh engine — matters most for the AI optimizer, since it starts
+cold every time instead of quietly learning across runs.
+
+Example run — ISP Backbone topology (9 routers), 20 runs × 150 ticks per algorithm:
+
+| Algorithm | Avg Delay | Avg Loss | Delivered | Dropped |
+|---|---|---|---|---|
+| Dijkstra (OSPF) | 65.94 ms | 0.00% | 5,271 | 0 |
+| Bellman-Ford (RIP) | 65.75 ms | 0.00% | 5,442 | 0 |
+| ECMP | 72.96 ms | 0.00% | 5,371 | 0 |
+| AI Route Optimizer | 170.18 ms | 41.17% | 3,867 | — |
+
+**Winner (lowest avg delay): Bellman-Ford.** The AI optimizer's numbers
+look worse here on purpose, not by accident — each run resets its
+Q-table for a fair comparison, so with only 150 ticks it doesn't get
+enough time to actually learn the topology before the run ends. Give it
+a longer run or leave "train continuously" on in the interactive
+dashboard and it improves noticeably. This table is one real example
+run, not a fixed benchmark — numbers will vary with topology, traffic
+pattern, and run length, which is the point of having the mode at all.
+
+## Roadmap
+
+Things that would be worth building next, roughly in order of how
+contained they are:
+
+- **Real packet corruption** — `Link` already has an independent
+  `lossProbability`; adding a `corrupted` flag to `Packet` and wiring it
+  through `computeChecksum()` would make the checksum field in the
+  Packet Inspector mean something instead of always passing.
+- **Function approximation for the AI optimizer** — the Q-table is a
+  flat lookup keyed on `(router, destination)`, which won't scale past
+  a few dozen routers. A small neural net in place of the table is the
+  natural next step.
+- **Real TCP congestion control** — right now TCP is fixed-count
+  retry-with-timeout, not slow start / AIMD window growth. Would make
+  the TCP-vs-UDP demo a lot more convincing under real load.
+- **Weighted fair queueing** — QoS is strict-priority only today, so a
+  starved low-priority flow just... stays starved. WFQ or a token
+  bucket would fix that.
+- **Dirty-region canvas rendering** — the topology canvas redraws
+  everything from scratch every frame. Fine up to ~15 routers, would
+  need real optimization for anything bigger.
+- **BGP / MPLS / IPv6 / SDN** — explicitly out of scope for this
+  version, but the routing-algorithm interface was built with exactly
+  this kind of extension in mind.
 
 ## Two real bugs, found the hard way
 
@@ -152,7 +224,7 @@ netsimx/
     │   ├── analytics/       # stats collector
     │   ├── topology/        # topology generators
     │   ├── persistence/     # JSON/CSV/PDF, no external libs
-    │   └── gui/             # everything you see and click
+    │   └── gui/              # everything you see and click
     └── test/java/com/netsimx/   # 38 JUnit tests
 ```
 
