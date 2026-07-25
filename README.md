@@ -7,9 +7,7 @@ forwarding, congestion, QoS, TCP/UDP behavior, failures, live charts,
 and an AI route optimizer, all running in an actual interactive
 dashboard instead of just printing numbers to a console.
 
-![Java](https://img.shields.io/badge/Java-17%2B-orange?logo=openjdk&logoColor=white)
-![JavaFX](https://img.shields.io/badge/JavaFX-21-4fc3f7?logo=java&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-38%20passing-43cf94)
+
 
 <img src="docs/assets/demo.gif" alt="NetSimX live demo" width="800"/>
 
