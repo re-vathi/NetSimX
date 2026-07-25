@@ -57,14 +57,45 @@ no SQLite, no PDF library, no JSON library, all hand-rolled.
 
 ## Architecture
 
-<img src="docs/assets/architecture-diagram.png" alt="Module architecture" width="800"/>
 
-Every box here is a real Java package, every arrow a real dependency —
-this diagram is generated from a small script, not drawn by hand, so it
-can't quietly drift out of sync with the actual code. Worth noting:
-nothing depends on `gui` — the simulation engine has no idea a graphical
-interface even exists, which is what makes headless benchmark runs
-possible in the first place.
+
+```
+        New Simulation Wizard
+                |
+                ▼
+          NetworkTopology
+        (routers + links)
+                |
+                ▼
+        Traffic Generator
+   (Voice / Video / Web / Email / File)
+                |
+                ▼
+          Routing Engine
+ (Dijkstra / Bellman-Ford / ECMP / AI)
+                |
+        ┌───────┴───────┐
+        ▼               ▼
+   TCP Handling     UDP Handling
+  (ACK + retry)   (fire-and-forget)
+        |               |
+        └───────┬───────┘
+                ▼
+          QoS Scheduler
+  (Voice > Video > Web > Email > File)
+                |
+                ▼
+          Router Queues
+ (deliver / drop / re-queue, per-link
+        bandwidth budget)
+                |
+                ▼
+      Statistics Collector
+                |
+                ▼
+        JavaFX Dashboard
+ (live charts, canvas, inspectors)
+```
 
 ## What's actually in here
 
